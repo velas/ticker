@@ -1,6 +1,7 @@
 const express = require("express");
 const fetch = require("node-fetch");
-const BigNumber = require('bignumber.js');
+const BigNumber = require("bignumber.js");
+const fs = require("fs");
 
 const app = express();
 let tickerRefreshPromise = null;
@@ -175,6 +176,19 @@ app.get('/api/v1/stats/totalcoins', async (req, res, next) => {
   }
 });
 
+app.get('/config.toml', async (req, res, next) => {
+  try {
+    const signer_acc = req.query.signer_acc.replace(/\W/g, '');
+    const config = fs.readFileSync('config.toml').toString();
+    if (signer_acc) {
+      res.send(config.split('${signer_acc}').join(signer_acc));
+      return;
+    }
+    res.send(config);
+  }catch(e) {
+    next(e);
+  }
+});
 app.listen(port, () => {
   console.log("Listening");
 });

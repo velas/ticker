@@ -1,0 +1,49 @@
+[parity]
+chain = "./spec.json"
+base_path = "./data"
+auto_update = "none"
+
+[network]
+port = 30304
+discovery = true
+
+[rpc]
+interface = "local"
+cors = ["all"]
+hosts = ["all"]
+apis = ["all"]
+port = 8545
+
+[websockets]
+interface = "local"
+origins = ["all"]
+port = 8546
+
+[ipc]
+disable = true
+
+[secretstore]
+disable = true
+
+[ipfs]
+enable = false
+
+[account]
+unlock = ["${signer_acc}"]
+password = ["./password"]
+
+[mining]
+force_sealing = true
+min_gas_price = 21000
+gas_floor_target = "10000000"
+engine_signer = "${signer_acc}"
+reseal_on_txs = "none"
+extra_data = "Parity"
+
+[misc]
+logging = "tx_filter=error,trace=trace,tx=trace,own_tx=trace,signer=trace,engine=trace"
+
+[footprint]
+tracing = "on"
+fat_db = "on"
+pruning = "archive"
