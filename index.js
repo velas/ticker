@@ -35,7 +35,7 @@ function initParams() {
     console.log("Using coinmarketcap limit. You can set environment variable CMC_LIMIT to change it", cmcLimit);
   }
 
-  if (process.env.DEBUG) {
+  if (process.env.DEBUG && process.env.DEBUG !== "false" && process.env.DEBUG !== "no" && process.env.DEBUG !== "0" && process.env.DEBUG !== "FALSE" && process.env.DEBUG !== "NO") {
     debug = true;
   }
 }
