@@ -81,7 +81,7 @@ function round6(num) {
 }
 
 function round8(num) {
-  return Math.round((num + Number.EPSILON) * 1e8) / 1e8 + "";
+  return (Math.round((num + Number.EPSILON) * 1e8) / 1e8).toFixed(8);
 }
 
 async function queryTicker() {
@@ -95,6 +95,7 @@ async function queryTicker() {
     ]);
     const foundationBN = balance1BN.plus(balance2BN);
     const btc_usd = round8(btc.quote.USD.price);
+    console.log('btc_usd', btc.quote.USD.price, btc_usd);
     const available_supply = supplyBN.minus(foundationBN).toString();
     const total_supply = fixTotalSupply(supplyBN.toNumber())
     const price_usd = round6(vlx.quote.USD.price);
