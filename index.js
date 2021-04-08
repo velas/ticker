@@ -87,17 +87,14 @@ function round8(num) {
 async function queryTicker() {
   try {
     const startAt = Date.now();
-    const [supplyBN, {btc, vlx}, balance1BN, balance2BN] = await Promise.all([
+    const [supplyBN, {btc, vlx}] = await Promise.all([
       getVlxSupplyBN(),
       getCryptoCoinsInfo(),
-      getVlxBalanceBN("0x889a488442f84f096e725d6c3119c72ea75f6b5f"),
-      getVlxBalanceBN("0x2632534445471de586514e5726568eee0110bd2b"),
     ]);
-    const foundationBN = balance1BN.plus(balance2BN);
     const btc_usd = round8(btc.quote.USD.price);
     console.log('btc_usd', btc.quote.USD.price, btc_usd);
-    const available_supply = supplyBN.minus(foundationBN).toString();
     const total_supply = fixTotalSupply(supplyBN.toNumber())
+    const available_supply = total_supply;
     const price_usd = round6(vlx.quote.USD.price);
     const volume = round(vlx.quote.USD.volume_24h);
     const price_btc = round8(vlx.quote.USD.price / btc.quote.USD.price);
