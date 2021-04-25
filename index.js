@@ -41,10 +41,21 @@ function initParams() {
 }
 
 async function getVlxSupplyBN() {
-  const resSupply = await fetch(`${explorerUrl}?module=stats&action=ethsupply`);
+  const resSupply = await fetch(`${explorerUrl}/../rpc`, {
+    method: 'POST',
+    cache: 'no-cache',
+    headers: {
+      'content-type': 'application/json',
+      accept: '*/*',
+    },
+    body: '{"method":"getSupply","jsonrpc":"2.0","params":[{"commitment":"max"}],"id":"69e8210f-1227-4a0d-a96d-c89d990bd296"}'
+  });
   const jsonSupply = await resSupply.json();
-  const supply = jsonSupply.result;
-  return new BigNumber(supply).dividedBy(1e18);
+  const supply = jsonSupply.result.value.total;
+  if (debug) {
+    console.log('Got supply', supply);
+  }
+  return new BigNumber(supply/1e9 + '');
 }
 
 async function getCryptoCoinsInfo() {
@@ -61,15 +72,16 @@ async function getCryptoCoinsInfo() {
   return {btc, vlx};
 }
 
-async function getVlxBalanceBN(address) {
-  const res = await fetch(`${explorerUrl}?module=account&action=eth_get_balance&address=${address}`);
-  const json = await res.json();
-  const balance = json.result;
-  return new BigNumber(balance).dividedBy(1e18);
-}
+// async function getVlxBalanceBN(address) {
+//   const res = await fetch(`${explorerUrl}?module=account&action=eth_get_balance&address=${address}`);
+//   const json = await res.json();
+//   const balance = json.result;
+//   return new BigNumber(balance).dividedBy(1e18);
+// }
 
 function fixTotalSupply(supply) {
-  return Math.round(Math.max(2080000000, supply)) + "";
+  return supply + "";
+  // return Math.round(Math.max(2080000000, supply)) + "";
 }
 
 function round(num) {
