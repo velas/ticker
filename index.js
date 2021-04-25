@@ -41,7 +41,7 @@ function initParams() {
 }
 
 async function getVlxSupplyBN() {
-  const resSupply = await fetch(`${explorerUrl}/../rpc`, {
+  const resSupply = await fetch(`https://mainnet.velas.com/rpc`, {
     method: 'POST',
     cache: 'no-cache',
     headers: {
