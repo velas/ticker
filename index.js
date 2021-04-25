@@ -41,38 +41,49 @@ function initParams() {
 }
 
 async function getVlxSupplyBN() {
-  const resSupply = await fetch(`https://mainnet.velas.com/rpc`, {
-    method: 'POST',
-    cache: 'no-cache',
-    headers: {
-      'content-type': 'application/json',
-      accept: '*/*',
-    },
-    body: '{"method":"getSupply","jsonrpc":"2.0","params":[{"commitment":"max"}],"id":"69e8210f-1227-4a0d-a96d-c89d990bd296"}'
-  });
-  const jsonSupply = await resSupply.json();
-  if (!jsonSupply.result || !jsonSupply.result.value || !jsonSupply.result.value.total) {
-    console.log('Got invalid response when trying to getSupply', jsonSupply);
+  try {
+    const resSupply = await fetch(`https://mainnet.velas.com/rpc`, {
+      method: 'POST',
+      cache: 'no-cache',
+      headers: {
+        'content-type': 'application/json',
+        accept: '*/*',
+      },
+      body: '{"method":"getSupply","jsonrpc":"2.0","params":[{"commitment":"max"}],"id":"69e8210f-1227-4a0d-a96d-c89d990bd296"}'
+    });
+    const jsonSupply = await resSupply.json();
+    if (!jsonSupply.result || !jsonSupply.result.value || !jsonSupply.result.value.total) {
+      console.log('Got invalid response when trying to getSupply', jsonSupply);
+      return new BigNumber(0);
+    }
+    const supply = jsonSupply.result.value.total;
+    if (debug) {
+      console.log('Got supply', supply);
+    }
+    return new BigNumber(supply/1e9 + '');
+  } catch(e) {
+    console.error(e);
+    return new BigNumber(0);
   }
-  const supply = jsonSupply.result.value.total;
-  if (debug) {
-    console.log('Got supply', supply);
-  }
-  return new BigNumber(supply/1e9 + '');
 }
 
 async function getCryptoCoinsInfo() {
-  const resCmcListing = await fetch(`https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${cmcLimit}&start=1`);
-  const jsonCmcListing = await resCmcListing.json();
-  const btc = jsonCmcListing.data.find((coin) => coin.symbol === "BTC");
-  const vlx = jsonCmcListing.data.find((coin) => coin.symbol === "VLX");
-  if (!btc) {
-    throw new Error("Btc is not found at coinmarketcap listing");
+  try {
+    const resCmcListing = await fetch(`https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${cmcLimit}&start=1`);
+    const jsonCmcListing = await resCmcListing.json();
+    const btc = jsonCmcListing.data.find((coin) => coin.symbol === "BTC");
+    const vlx = jsonCmcListing.data.find((coin) => coin.symbol === "VLX");
+    if (!btc) {
+      throw new Error("Btc is not found at coinmarketcap listing");
+    }
+    if (!vlx) {
+      throw new Error("Vlx is not found at coinmarketcap listing");
+    }
+    return {btc, vlx};
+  }catch(e) {
+    console.error(e);
+    return {btc: {quote: {USD: {price: 0, volume_24h: 0}}}, vlx: {quote: {USD: {price: 0, volume_24h: 0}}}};
   }
-  if (!vlx) {
-    throw new Error("Vlx is not found at coinmarketcap listing");
-  }
-  return {btc, vlx};
 }
 
 // async function getVlxBalanceBN(address) {
