@@ -51,6 +51,9 @@ async function getVlxSupplyBN() {
     body: '{"method":"getSupply","jsonrpc":"2.0","params":[{"commitment":"max"}],"id":"69e8210f-1227-4a0d-a96d-c89d990bd296"}'
   });
   const jsonSupply = await resSupply.json();
+  if (!jsonSupply.result || !jsonSupply.result.value || !jsonSupply.result.value.total) {
+    console.log('Got invalid response when trying to getSupply', jsonSupply);
+  }
   const supply = jsonSupply.result.value.total;
   if (debug) {
     console.log('Got supply', supply);
