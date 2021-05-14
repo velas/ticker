@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-
+const monitoringCurrencies = ['vlx', 'btc', 'ltc', 'eth', 'gbx' ];
 const app = express();
 let tickerRefreshPromise = null;
 let cachedTicker = null;
@@ -31,7 +31,7 @@ function initParams() {
     cmcLimit = process.env.CMC_LIMIT;
     console.log("Using coinmarketcap limit taken from environment variable CMC_LIMIT", cmcLimit);
   } else {
-    cmcLimit = 300;
+    cmcLimit = 3000;
     console.log("Using coinmarketcap limit. You can set environment variable CMC_LIMIT to change it", cmcLimit);
   }
 
@@ -71,15 +71,22 @@ async function getCryptoCoinsInfo() {
   try {
     const resCmcListing = await fetch(`https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${cmcLimit}&start=1`);
     const jsonCmcListing = await resCmcListing.json();
-    const btc = jsonCmcListing.data.find((coin) => coin.symbol === "BTC");
-    const vlx = jsonCmcListing.data.find((coin) => coin.symbol === "VLX");
-    if (!btc) {
-      throw new Error("Btc is not found at coinmarketcap listing");
+    const result = Object.create(null);
+    for (let currency of monitoringCurrencies) {
+      const currencyUpper = currency.toUpperCase();
+      result[currency] = jsonCmcListing.data.find((coin) => coin.symbol === currencyUpper);
+      if (!result[currency]) {
+        result[currency] = {
+          quote: {
+            USD: {
+              price: 0,
+              volume_24h: 0
+            }
+          }
+        };
+      }
     }
-    if (!vlx) {
-      throw new Error("Vlx is not found at coinmarketcap listing");
-    }
-    return {btc, vlx};
+    return result;
   }catch(e) {
     console.error(e);
     return {btc: {quote: {USD: {price: 0, volume_24h: 0}}}, vlx: {quote: {USD: {price: 0, volume_24h: 0}}}};
@@ -94,40 +101,70 @@ async function getCryptoCoinsInfo() {
 // }
 
 function fixTotalSupply(supply) {
+  if (!supply) {
+    return '';
+  }
   return supply + "";
   // return Math.round(Math.max(2080000000, supply)) + "";
 }
 
 function round(num) {
+  if (!num) {
+    return '';
+  }
   return Math.round((num + Number.EPSILON)) + "";
 }
 
 function round6(num) {
+  if (!num) {
+    return '';
+  }
   return Math.round((num + Number.EPSILON) * 1e6) / 1e6 + "";
 }
 
 function round8(num) {
+  if (!num) {
+    return '';
+  }
   return (Math.round((num + Number.EPSILON) * 1e8) / 1e8).toFixed(8);
 }
 
 async function queryTicker() {
   try {
     const startAt = Date.now();
-    const [supplyBN, {btc, vlx}] = await Promise.all([
+    const [supplyBN, prices] = await Promise.all([
       getVlxSupplyBN(),
       getCryptoCoinsInfo(),
     ]);
-    const btc_usd = round8(btc.quote.USD.price);
-    console.log('btc_usd', btc.quote.USD.price, btc_usd);
     const total_supply = fixTotalSupply(supplyBN.toNumber())
     const available_supply = total_supply;
-    const price_usd = round6(vlx.quote.USD.price);
-    const volume = round(vlx.quote.USD.volume_24h);
-    const price_btc = round8(vlx.quote.USD.price / btc.quote.USD.price);
-    const volume_btc = round8(vlx.quote.USD.volume_24h / btc.quote.USD.price);
+    const volume     = round(prices.vlx.quote.USD.volume_24h);
+    const price_btc  = round8(prices.vlx.quote.USD.price / prices.btc.quote.USD.price);
+    const volume_btc = round8(prices.vlx.quote.USD.volume_24h / prices.btc.quote.USD.price);
 
-    cachedTicker = {total_supply, price_usd, volume, price_btc, volume_btc, available_supply};
+    const price_usd  = round6(prices.vlx.quote.USD.price);
+    const btc_usd = round8(prices.btc.quote.USD.price);
 
+    if (!cachedTicker) {
+      cachedTicker = {};
+    }
+    cachedTicker.total_supply = total_supply || cachedTicker.total_supply || "0";
+    cachedTicker.price_usd = price_usd || cachedTicker.price_usd || "0";
+    cachedTicker.volume = volume || cachedTicker.volume || "0";
+    cachedTicker.price_btc = price_btc || cachedTicker.price_btc || "0";
+    cachedTicker.volume_btc = volume_btc || cachedTicker.volume_btc || "0";
+    cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
+
+    for (const currency in prices) {
+      if (currency === 'btc' || currency === 'vlx') {
+        continue;
+      }
+      try {
+        cachedTicker[`price_${currency}`] = round8(prices[currency].quote.USD.price);
+      }catch(e) {
+        console.error(`Parsing ${currency} error`, e);
+      }
+    }
     if (debug) {
       console.log("Got ticker", Date.now() - startAt, new Date());
     }
