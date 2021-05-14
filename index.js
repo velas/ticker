@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['vlx', 'btc', 'ltc', 'eth', 'gbx' ];
+const monitoringCurrencies = ['vlx', 'btc', 'ltc', 'eth', 'gbx', 'usdt' ];
 const app = express();
 let tickerRefreshPromise = null;
 let cachedTicker = null;
@@ -156,11 +156,11 @@ async function queryTicker() {
     cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
 
     for (const currency in prices) {
-      if (currency === 'btc' || currency === 'vlx') {
+      if (currency === 'vlx') {
         continue;
       }
       try {
-        cachedTicker[`price_${currency}`] = round8(prices[currency].quote.USD.price);
+        cachedTicker[`${currency}_price`] = round8(prices[currency].quote.USD.price);
       }catch(e) {
         console.error(`Parsing ${currency} error`, e);
       }
@@ -174,20 +174,28 @@ async function queryTicker() {
   return cachedTicker;
 }
 
-function queryTickerCached() {
-  if (!tickerRefreshPromise) {
-    tickerRefreshPromise = (
-      queryTicker().then((ticker) => {
-        setTimeout(() => { tickerRefreshPromise = null; }, 5000);
-        return ticker;
-      })
-    );
+async function queryTickerCached() {
+  if (!cachedTicker) {
+    return await queryTicker();
   }
-  return tickerRefreshPromise;
+  return cachedTicker;
 }
 
+async function refreshTickerRecursively() {
+  try {
+    const startAt = Date.now();
+    await queryTicker();
+    if (debug) {
+      console.log('Ticker queried recurcively in ms ', Date.now() - startAt);
+    }
+  }catch(e) {
+    console.error('Query ticker', e);
+  }
+  setTimeout(refreshTickerRecursively, 5000);
+}
 
 initParams();
+refreshTickerRecursively();
 
 app.get('/ticker', async (req, res, next) => {
   try {
