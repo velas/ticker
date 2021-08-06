@@ -89,7 +89,7 @@ async function getCryptoCoinsInfo() {
     return result;
   }catch(e) {
     console.error(e);
-    return {btc: {quote: {USD: {price: 0, volume_24h: 0}}}, vlx: {quote: {USD: {price: 0, volume_24h: 0}}}};
+    return Object.create(null);
   }
 }
 
