@@ -12,6 +12,8 @@ let explorerUrl = null;
 let cmcLimit = null;
 let debug = false;
 
+const EXIT_AFTER_TIMEOUT = parseInt(process.env.EXIT_AFTER_TIMEOUT) || 3600*1000;
+
 function initParams() {
   if (process.env.HTTP_PORT) {
     port = parseInt(process.env.HTTP_PORT);
@@ -87,7 +89,7 @@ async function getCryptoCoinsInfo() {
       }
     }
     return result;
-  }catch(e) {
+  } catch(e) {
     console.error(e);
     return Object.create(null);
   }
@@ -136,6 +138,7 @@ async function queryTicker() {
       getVlxSupplyBN(),
       getCryptoCoinsInfo(),
     ]);
+    if (!prices.vlx) return cachedTicker;
     const total_supply = fixTotalSupply(supplyBN.toNumber())
     const available_supply = total_supply;
     const volume     = round(prices.vlx.quote.USD.volume_24h);
@@ -154,6 +157,7 @@ async function queryTicker() {
     cachedTicker.price_btc = price_btc || cachedTicker.price_btc || "0";
     cachedTicker.volume_btc = volume_btc || cachedTicker.volume_btc || "0";
     cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
+    cachedTicker.ts = Date.now();
 
     for (const currency in prices) {
       if (currency === 'vlx') {
@@ -161,7 +165,7 @@ async function queryTicker() {
       }
       try {
         cachedTicker[`${currency}_price`] = round8(prices[currency].quote.USD.price);
-      }catch(e) {
+      } catch(e) {
         console.error(`Parsing ${currency} error`, e);
       }
     }
@@ -188,7 +192,11 @@ async function refreshTickerRecursively() {
     if (debug) {
       console.log('Ticker queried recurcively in ms ', Date.now() - startAt);
     }
-  }catch(e) {
+    if (cachedTicker && Date.now() - cachedTicker.ts > EXIT_AFTER_TIMEOUT) {
+      console.error('Exiting because of timeout');
+      process.exit(1);
+    }
+  } catch(e) {
     console.error('Query ticker', e);
   }
   setTimeout(refreshTickerRecursively, 5000);
@@ -254,7 +262,7 @@ app.get('/config.toml', async (req, res, next) => {
       return;
     }
     res.send(config);
-  }catch(e) {
+  } catch(e) {
     next(e);
   }
 });
