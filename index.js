@@ -13,6 +13,7 @@ let cmcLimit = null;
 let debug = false;
 
 const EXIT_AFTER_TIMEOUT = parseInt(process.env.EXIT_AFTER_TIMEOUT) || 3600*1000;
+const VELAS_RPC_URL = process.env.VELAS_RPC_URL || "https://api.velas.com/rpc";
 
 function initParams() {
   if (process.env.HTTP_PORT) {
@@ -44,7 +45,7 @@ function initParams() {
 
 async function getVlxSupplyBN() {
   try {
-    const resSupply = await fetch(`https://mainnet.velas.com/rpc`, {
+    const resSupply = await fetch(VELAS_RPC_URL, {
       method: 'POST',
       cache: 'no-cache',
       headers: {
