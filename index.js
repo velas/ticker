@@ -200,11 +200,14 @@ async function refreshTickerRecursively() {
   } catch(e) {
     console.error('Query ticker', e);
   }
-  setTimeout(refreshTickerRecursively, 5000);
 }
 
 initParams();
-refreshTickerRecursively();
+// Application stops refreshing because of unknown reason. This could be because of
+// recursive algorithm in the following function.
+// refreshTickerRecursively();
+
+setInterval(queryTicker, 50000);
 
 app.get('/ticker', async (req, res, next) => {
   try {
