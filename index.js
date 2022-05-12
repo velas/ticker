@@ -133,6 +133,7 @@ function round8(num) {
 }
 
 async function queryTicker() {
+  console.log('queryTicker');
   try {
     const startAt = Date.now();
     const [supplyBN, prices] = await Promise.all([
