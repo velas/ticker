@@ -194,8 +194,7 @@ async function refreshTickerRecursively() {
       console.log('Ticker queried recurcively in ms ', Date.now() - startAt);
     }
     if (cachedTicker && Date.now() - cachedTicker.ts > EXIT_AFTER_TIMEOUT) {
-      console.error('Exiting because of timeout');
-      process.exit(1);
+      console.error('Data too old', cachedTicker.ts);
     }
   } catch(e) {
     console.error('Query ticker', e);
