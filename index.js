@@ -12,8 +12,36 @@ let explorerUrl = null;
 let cmcLimit = null;
 let debug = false;
 
-const EXIT_AFTER_TIMEOUT = parseInt(process.env.EXIT_AFTER_TIMEOUT) || 3600*1000;
+const TIMEOUT = parseInt(process.env.NETWORK_TIMEOUT) || 100000;
 const VELAS_RPC_URL = process.env.VELAS_RPC_URL || "https://api.velas.com/rpc";
+
+function withTimeout(func, timeoutMS = TIMEOUT) {
+  return new Promise(async (resolve, reject) => {
+    let isResolved = false;
+    const timeout = setTimeout(() => {
+      if (isResolved) return;
+      isResolved = true;
+      reject(new Error('Timeout'));
+    }, timeoutMS);
+    try {
+      const res = await func();
+      clearTimeout(timeout);
+      if (!isResolved) {
+        isResolved = true;
+        resolve(res);
+      } else {
+        console.warn('Got result after timeout', );
+      }
+    } catch(e) {
+      if (!isResolved) {
+        isResolved = true;
+        reject(e);
+      } else {
+        console.warn('Error after timeout', e);
+      }
+    }
+  });
+}
 
 function initParams() {
   if (process.env.HTTP_PORT) {
@@ -190,24 +218,20 @@ async function queryTickerCached() {
 async function refreshTickerRecursively() {
   try {
     const startAt = Date.now();
-    await queryTicker();
+    await withTimeout(queryTicker);
     if (debug) {
       console.log('Ticker queried recurcively in ms ', Date.now() - startAt);
     }
-    if (cachedTicker && Date.now() - cachedTicker.ts > EXIT_AFTER_TIMEOUT) {
-      console.error('Data too old', cachedTicker.ts);
-    }
   } catch(e) {
     console.error('Query ticker', e);
+  } finally {
+    setTimeout(refreshTickerRecursively, 50000);
   }
 }
 
 initParams();
-// Application stops refreshing because of unknown reason. This could be because of
-// recursive algorithm in the following function.
-// refreshTickerRecursively();
 
-setInterval(queryTicker, 50000);
+refreshTickerRecursively();
 
 app.get('/ticker', async (req, res, next) => {
   try {
