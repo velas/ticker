@@ -185,6 +185,7 @@ async function queryTicker() {
     cachedTicker.price_usd = price_usd || cachedTicker.price_usd || "0";
     cachedTicker.volume = volume || cachedTicker.volume || "0";
     cachedTicker.price_btc = price_btc || cachedTicker.price_btc || "0";
+    cachedTicker.btc_usd = btc_usd || cachedTicker.btc_usd || "0";
     cachedTicker.volume_btc = volume_btc || cachedTicker.volume_btc || "0";
     cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
     cachedTicker.ts = Date.now();
