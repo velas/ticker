@@ -13,7 +13,7 @@ let debug = false;
 const TIMEOUT = parseInt(process.env.NETWORK_TIMEOUT) || 100000;
 const VELAS_RPC_URL = process.env.VELAS_RPC_URL || "https://api.velas.com/rpc";
 const API_KEY = process.env.CMC_API_KEY;
-const REFRESH_PERIOD = parseInt(REFRESH_PERIOD) || 300000;
+const REFRESH_PERIOD = parseInt(process.env.REFRESH_PERIOD) || 300000;
 
 if (!API_KEY) {
   console.error("CMC_API_KEY env variable required");
