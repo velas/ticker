@@ -4,19 +4,19 @@ const BigNumber = require("bignumber.js");
 const fs = require("fs");
 const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai'];
 const app = express();
-let tickerRefreshPromise = null;
 let cachedTicker = null;
 
 let port = null;
 let explorerUrl = null;
-let cmcLimit = null;
 let debug = false;
 
 const TIMEOUT = parseInt(process.env.NETWORK_TIMEOUT) || 100000;
 const VELAS_RPC_URL = process.env.VELAS_RPC_URL || "https://api.velas.com/rpc";
 const API_KEY = process.env.CMC_API_KEY;
+const REFRESH_PERIOD = parseInt(REFRESH_PERIOD) || 300000;
+
 if (!API_KEY) {
-  console.error("CMC API_KEY env variable required");
+  console.error("CMC_API_KEY env variable required");
   process.exit(1);
 }
 
@@ -62,13 +62,6 @@ function initParams() {
   } else {
     explorerUrl = "http://127.0.0.1:4000/api";
     console.log("Using default explorer url. You can set environment variable EXPLORER_URL to change it", explorerUrl);
-  }
-  if (process.env.CMC_LIMIT) {
-    cmcLimit = process.env.CMC_LIMIT;
-    console.log("Using coinmarketcap limit taken from environment variable CMC_LIMIT", cmcLimit);
-  } else {
-    cmcLimit = 3000;
-    console.log("Using coinmarketcap limit. You can set environment variable CMC_LIMIT to change it", cmcLimit);
   }
 
   if (process.env.DEBUG && process.env.DEBUG !== "false" && process.env.DEBUG !== "no" && process.env.DEBUG !== "0" && process.env.DEBUG !== "FALSE" && process.env.DEBUG !== "NO") {
@@ -215,7 +208,7 @@ async function refreshTickerRecursively() {
   } catch (e) {
     console.error('Query ticker', e);
   } finally {
-    setTimeout(refreshTickerRecursively, 50000);
+    setTimeout(refreshTickerRecursively, REFRESH_PERIOD);
   }
 }
 
