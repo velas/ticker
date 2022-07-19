@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['vlx', 'btc', 'ltc', 'eth', 'gbx', 'usdt', 'busd', 'usdc', 'ht', 'bnb', 'sol' ];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai'];
 const app = express();
 let tickerRefreshPromise = null;
 let cachedTicker = null;
@@ -14,6 +14,11 @@ let debug = false;
 
 const TIMEOUT = parseInt(process.env.NETWORK_TIMEOUT) || 100000;
 const VELAS_RPC_URL = process.env.VELAS_RPC_URL || "https://api.velas.com/rpc";
+const API_KEY = process.env.CMC_API_KEY;
+if (!API_KEY) {
+  console.error("CMC API_KEY env variable required");
+  process.exit(1);
+}
 
 function withTimeout(func, timeoutMS = TIMEOUT) {
   return new Promise(async (resolve, reject) => {
@@ -30,9 +35,9 @@ function withTimeout(func, timeoutMS = TIMEOUT) {
         isResolved = true;
         resolve(res);
       } else {
-        console.warn('Got result after timeout', );
+        console.warn('Got result after timeout');
       }
-    } catch(e) {
+    } catch (e) {
       if (!isResolved) {
         isResolved = true;
         reject(e);
@@ -91,8 +96,8 @@ async function getVlxSupplyBN() {
     if (debug) {
       console.log('Got supply', supply);
     }
-    return new BigNumber(supply/1e9 + '');
-  } catch(e) {
+    return new BigNumber(supply / 1e9 + '');
+  } catch (e) {
     console.error(e);
     return new BigNumber(0);
   }
@@ -100,43 +105,30 @@ async function getVlxSupplyBN() {
 
 async function getCryptoCoinsInfo() {
   try {
-    const resCmcListing = await fetch(`https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${cmcLimit}&start=1`);
-    const jsonCmcListing = await resCmcListing.json();
+    const res = await fetch(
+      `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?slug=${monitoringCurrencies.join()}`,
+      { headers: { 'X-CMC_PRO_API_KEY': API_KEY } }
+    );
+    const json = await res.json();
     const result = Object.create(null);
-    for (let currency of monitoringCurrencies) {
-      const currencyUpper = currency.toUpperCase();
-      result[currency] = jsonCmcListing.data.find((coin) => coin.symbol === currencyUpper);
-      if (!result[currency]) {
-        result[currency] = {
-          quote: {
-            USD: {
-              price: 0,
-              volume_24h: 0
-            }
-          }
-        };
-      }
+    for (let k in json.data) {
+      const currencyUpper = json.data[k].symbol;
+      result[currencyUpper.toLowerCase()  ] = {
+        quote: json.data[k].quote,
+      };
     }
     return result;
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     return Object.create(null);
   }
 }
-
-// async function getVlxBalanceBN(address) {
-//   const res = await fetch(`${explorerUrl}?module=account&action=eth_get_balance&address=${address}`);
-//   const json = await res.json();
-//   const balance = json.result;
-//   return new BigNumber(balance).dividedBy(1e18);
-// }
 
 function fixTotalSupply(supply) {
   if (!supply) {
     return '';
   }
   return supply + "";
-  // return Math.round(Math.max(2080000000, supply)) + "";
 }
 
 function round(num) {
@@ -171,11 +163,11 @@ async function queryTicker() {
     if (!prices.vlx) return cachedTicker;
     const total_supply = fixTotalSupply(supplyBN.toNumber())
     const available_supply = total_supply;
-    const volume     = round(prices.vlx.quote.USD.volume_24h);
-    const price_btc  = round8(prices.vlx.quote.USD.price / prices.btc.quote.USD.price);
+    const volume = round(prices.vlx.quote.USD.volume_24h);
+    const price_btc = round8(prices.vlx.quote.USD.price / prices.btc.quote.USD.price);
     const volume_btc = round8(prices.vlx.quote.USD.volume_24h / prices.btc.quote.USD.price);
 
-    const price_usd  = round6(prices.vlx.quote.USD.price);
+    const price_usd = round6(prices.vlx.quote.USD.price);
     const btc_usd = round8(prices.btc.quote.USD.price);
 
     if (!cachedTicker) {
@@ -191,19 +183,16 @@ async function queryTicker() {
     cachedTicker.ts = Date.now();
 
     for (const currency in prices) {
-      if (currency === 'vlx') {
-        continue;
-      }
       try {
         cachedTicker[`${currency}_price`] = round8(prices[currency].quote.USD.price);
-      } catch(e) {
+      } catch (e) {
         console.error(`Parsing ${currency} error`, e);
       }
     }
     if (debug) {
       console.log("Got ticker", Date.now() - startAt, new Date());
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
   return cachedTicker;
@@ -223,7 +212,7 @@ async function refreshTickerRecursively() {
     if (debug) {
       console.log('Ticker queried recurcively in ms ', Date.now() - startAt);
     }
-  } catch(e) {
+  } catch (e) {
     console.error('Query ticker', e);
   } finally {
     setTimeout(refreshTickerRecursively, 50000);
@@ -241,7 +230,7 @@ app.get('/ticker', async (req, res, next) => {
       throw new Error("Error composing ticker");
     }
     res.json(ticker);
-  } catch(e) {
+  } catch (e) {
     next(e);
   }
 });
@@ -253,7 +242,7 @@ app.get('/asapi', async (req, res, next) => {
       throw new Error("Error composing ticker");
     }
     res.send(ticker.available_supply);
-  } catch(e) {
+  } catch (e) {
     next(e);
   }
 });
@@ -265,7 +254,7 @@ app.get('/tsapi', async (req, res, next) => {
       throw new Error("Error composing ticker");
     }
     res.send(ticker.total_supply);
-  } catch(e) {
+  } catch (e) {
     next(e);
   }
 });
@@ -277,7 +266,7 @@ app.get('/api/v1/stats/totalcoins', async (req, res, next) => {
       throw new Error("Error composing ticker");
     }
     res.send(ticker.total_supply);
-  } catch(e) {
+  } catch (e) {
     next(e);
   }
 });
@@ -291,7 +280,7 @@ app.get('/config.toml', async (req, res, next) => {
       return;
     }
     res.send(config);
-  } catch(e) {
+  } catch (e) {
     next(e);
   }
 });
