@@ -7,7 +7,6 @@ const app = express();
 let cachedTicker = null;
 
 let port = null;
-let explorerUrl = null;
 let debug = false;
 
 const TIMEOUT = parseInt(process.env.NETWORK_TIMEOUT) || 100000;
@@ -56,13 +55,6 @@ function initParams() {
     port = 5000;
     console.log("Trying to listen to port", port, ". You can set environment variable HTTP_PORT to change it.");
   }
-  if (process.env.EXPLORER_URL) {
-    explorerUrl = process.env.EXPLORER_URL;
-    console.log("Using explorer url taken from environment variable EXPLORER_URL", explorerUrl);
-  } else {
-    explorerUrl = "http://127.0.0.1:4000/api";
-    console.log("Using default explorer url. You can set environment variable EXPLORER_URL to change it", explorerUrl);
-  }
 
   if (process.env.DEBUG && process.env.DEBUG !== "false" && process.env.DEBUG !== "no" && process.env.DEBUG !== "0" && process.env.DEBUG !== "FALSE" && process.env.DEBUG !== "NO") {
     debug = true;
@@ -106,7 +98,7 @@ async function getCryptoCoinsInfo() {
     const result = Object.create(null);
     for (let k in json.data) {
       const currencyUpper = json.data[k].symbol;
-      result[currencyUpper.toLowerCase()  ] = {
+      result[currencyUpper.toLowerCase()] = {
         quote: json.data[k].quote,
       };
     }
@@ -178,6 +170,7 @@ async function queryTicker() {
     for (const currency in prices) {
       try {
         cachedTicker[`${currency}_price`] = round8(prices[currency].quote.USD.price);
+        cachedTicker[`${currency}_24hdiff`] = round8(prices[currency].quote.USD.percent_change_24h);
       } catch (e) {
         console.error(`Parsing ${currency} error`, e);
       }
@@ -216,9 +209,23 @@ initParams();
 
 refreshTickerRecursively();
 
+function filterOut24Diff(ticker) {
+  ticker = Object.assign({}, ticker);
+  for (const key of Object.keys(ticker)) {
+    if (key.endsWith('_24hdiff')) {
+      delete ticker[key];
+    }
+  }
+  return ticker;
+}
+
 app.get('/ticker', async (req, res, next) => {
   try {
-    const ticker = await queryTickerCached();
+    let ticker = await queryTickerCached();
+    if (!req.query.include24hdiff) { //
+      ticker = filterOut24Diff(ticker);
+    }
+
     if (!ticker) {
       throw new Error("Error composing ticker");
     }
