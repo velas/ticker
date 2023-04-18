@@ -120,9 +120,18 @@ function addLabPrices(prices) {
   prices.labusdt_price = prices.usdt_price;
   prices.labusdc_price = prices.usdc_price;
   prices.labeth_price = prices.eth_price;
-  prices.labbnb_price = prices.bnb_price;
   prices.labmatic_price = prices.matic_price;
-  prices.labavax_price = prices.avax_price;
+}
+
+function addSwzPrices(prices) {
+  if (!prices) {
+    return;
+  }
+  prices.swzada_price = prices.ada_price;
+  prices.swzbnb_price = prices.bnb_price;
+  prices.swzavax_price = prices.avax_price;
+
+  delete prices.ada_price;
 }
 
 function addAnyPrices(prices) {
@@ -206,6 +215,7 @@ async function queryTicker() {
       }
     }
     addLabPrices(cachedTicker);
+    addSwzPrices(cachedTicker);
     addAnyPrices(cachedTicker);
 
     if (debug) {
