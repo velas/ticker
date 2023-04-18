@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai'];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche'];
 const app = express();
 let cachedTicker = null;
 
@@ -102,11 +102,41 @@ async function getCryptoCoinsInfo() {
         quote: json.data[k].quote,
       };
     }
+    if (json?.status?.error_message) {
+      console.log('cmc response', json);
+    }
     return result;
   } catch (e) {
     console.error(e);
     return Object.create(null);
   }
+}
+
+function addLabPrices(prices) {
+  if (!prices) {
+    return;
+  }
+  prices.labbusd_price = prices.busd_price;
+  prices.labusdt_price = prices.usdt_price;
+  prices.labusdc_price = prices.usdc_price;
+  prices.labeth_price = prices.eth_price;
+  prices.labbnb_price = prices.bnb_price;
+  prices.labmatic_price = prices.matic_price;
+  prices.labavax_price = prices.avax_price;
+}
+
+function addAnyPrices(prices) {
+  if (!prices) {
+    return;
+  }
+  prices.anybusd_price = prices.busd_price;
+  prices.anyusdt_price = prices.usdt_price;
+  prices.anyusdc_price = prices.usdc_price;
+  prices.anyeth_price = prices.eth_price;
+  prices.anybnb_price = prices.bnb_price;
+  prices.anymatic_price = prices.matic_price;
+  prices.anyavax_price = prices.avax_price;
+  prices.anydai_price = prices.dai_price;
 }
 
 function fixTotalSupply(supply) {
@@ -175,6 +205,9 @@ async function queryTicker() {
         console.error(`Parsing ${currency} error`, e);
       }
     }
+    addLabPrices(cachedTicker);
+    addAnyPrices(cachedTicker);
+
     if (debug) {
       console.log("Got ticker", Date.now() - startAt, new Date());
     }
@@ -231,6 +264,7 @@ app.get('/ticker', async (req, res, next) => {
     }
     res.json(ticker);
   } catch (e) {
+    console.error(e);
     next(e);
   }
 });
@@ -243,6 +277,7 @@ app.get('/asapi', async (req, res, next) => {
     }
     res.send(ticker.available_supply);
   } catch (e) {
+    console.error(e);
     next(e);
   }
 });
@@ -255,6 +290,7 @@ app.get('/tsapi', async (req, res, next) => {
     }
     res.send(ticker.total_supply);
   } catch (e) {
+    console.error(e);
     next(e);
   }
 });
@@ -267,6 +303,7 @@ app.get('/api/v1/stats/totalcoins', async (req, res, next) => {
     }
     res.send(ticker.total_supply);
   } catch (e) {
+    console.error(e);
     next(e);
   }
 });
@@ -281,6 +318,7 @@ app.get('/config.toml', async (req, res, next) => {
     }
     res.send(config);
   } catch (e) {
+    console.error(e);
     next(e);
   }
 });
