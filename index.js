@@ -120,7 +120,6 @@ function addLabPrices(prices) {
   prices.labusdt_price = prices.usdt_price;
   prices.labusdc_price = prices.usdc_price;
   prices.labeth_price = prices.eth_price;
-  prices.labmatic_price = prices.matic_price;
 }
 
 function addSwzPrices(prices) {
@@ -130,6 +129,7 @@ function addSwzPrices(prices) {
   prices.swzada_price = prices.ada_price;
   prices.swzbnb_price = prices.bnb_price;
   prices.swzavax_price = prices.avax_price;
+  prices.swzmatic_price = prices.matic_price;
 
   delete prices.ada_price;
 }
