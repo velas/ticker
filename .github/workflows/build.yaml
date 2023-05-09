@@ -1,27 +1,27 @@
-name: Build
-on:
-  workflow_dispatch:
-  push:
-    branches: [main]
+# name: Build
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: [main]
 
-env: 
-  APP_REPO: velas-ticker
+# env: 
+#   APP_REPO: velas-ticker
 
-jobs:
-  docker-build:
-    name: Build and push
-    runs-on:  testnet-services
-    outputs:
-      repository: ${{ steps.build.outputs.repository }}
-      image_tag: ${{ steps.build.outputs.image_tag }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build, tag, and push image 
-        id: build
-        env:
-          REGISTRY: ${{ secrets.REGISTRY_HOST }}/velas
-          REPOSITORY: ${{ env.APP_REPO }}
-          IMAGE_TAG: ${{github.sha}}
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --no-cache  .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+# jobs:
+#   docker-build:
+#     name: Build and push
+#     runs-on:  testnet-services
+#     outputs:
+#       repository: ${{ steps.build.outputs.repository }}
+#       image_tag: ${{ steps.build.outputs.image_tag }}
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Build, tag, and push image 
+#         id: build
+#         env:
+#           REGISTRY: ${{ secrets.REGISTRY_HOST }}/velas
+#           REPOSITORY: ${{ env.APP_REPO }}
+#           IMAGE_TAG: ${{github.sha}}
+#         run: |
+#           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --no-cache  .
+#           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
