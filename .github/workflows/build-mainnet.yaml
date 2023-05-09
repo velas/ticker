@@ -1,0 +1,48 @@
+name: Build-Deploy-mainnet
+on:
+  push:
+    branches: [main]
+
+env: 
+  APP_NAME: velas-ticker
+  APP_REPO: velas-ticker
+ 
+jobs:
+  docker-build:
+    name: Build and push
+    runs-on: monster-builder
+    outputs:
+      repository: ${{ steps.build.outputs.repository }}
+      image_tag: ${{ steps.build.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build, tag, and push image 
+        id: build
+        env:
+          REGISTRY: ${{ secrets.REGISTRY_HOST }}/velas
+          REPOSITORY: ${{ env.APP_REPO }}
+          IMAGE_TAG: ${{github.sha}}
+        run: |
+          docker build --no-cache -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --no-cache  .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+  deploy:
+    name: Deploy via Helmfile
+    runs-on: mainnet-deploy
+    needs: docker-build
+    steps:
+      - name: Check out velas-infra
+        uses: actions/checkout@master
+        with:
+          repository: velas/velas-infra
+          ref: master
+          ssh-key: ${{ secrets.SSH_KEY_INFRA }}
+      - name: Deploy via helmfile
+        id: deploy
+        env:
+          REGISTRY: ${{ secrets.REGISTRY_HOST }}/velas
+          REPOSITORY: ${{ env.APP_REPO }}
+          IMAGE_TAG: ${{github.sha}}
+          SOPS_AGE_KEY: ${{ secrets.INFRA_AGE }}
+        run: |
+          cd deploy
+          helmfile -e ${HELM_ENV} -l namespace=${NAMESPACE},name=${{ env.APP_NAME }} apply  --set image.tag=$IMAGE_TAG,image.repository=$REGISTRY/$REPOSITORY --skip-deps
