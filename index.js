@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'fantom', 'solana'];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana'];
 const app = express();
 let cachedTicker = null;
 
@@ -206,12 +206,13 @@ async function queryTicker() {
     cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
     cachedTicker.ts = Date.now();
 
-    for (const currency in prices) {
+    for (let currency in prices) {
+      const symbol = currency === 's' ? 'ftm' : currency;
       try {
-        cachedTicker[`${currency}_price`] = round8(prices[currency].quote.USD.price);
-        cachedTicker[`${currency}_24hdiff`] = round8(prices[currency].quote.USD.percent_change_24h);
+        cachedTicker[`${symbol}_price`] = round8(prices[currency].quote.USD.price);
+        cachedTicker[`${symbol}_24hdiff`] = round8(prices[currency].quote.USD.percent_change_24h);
       } catch (e) {
-        console.error(`Parsing ${currency} error`, e);
+        console.error(`Parsing ${symbol} error`, e);
       }
     }
     addLabPrices(cachedTicker);
