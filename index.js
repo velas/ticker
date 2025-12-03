@@ -53,7 +53,7 @@ function initParams() {
     console.log("Trying to listen to port", port, ". It's value taken from environment variable HTTP_PORT.");
   } else {
     port = 5000;
-    console.log("Trying to listen to port", port, ". You can set environment variable HTTP_PORT to change it. ");
+    console.log("Trying to listen to port", port, ". You can set environment variable HTTP_PORT to change it.");
   }
 
   if (process.env.DEBUG && process.env.DEBUG !== "false" && process.env.DEBUG !== "no" && process.env.DEBUG !== "0" && process.env.DEBUG !== "FALSE" && process.env.DEBUG !== "NO") {
