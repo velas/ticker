@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana'];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana', 'polygon-ecosystem-token'];
 const app = express();
 let cachedTicker = null;
 
@@ -100,7 +100,6 @@ async function getCryptoCoinsInfo() {
     for (const id in json.data) {
       const coin = json.data[id];
       const symbol = coin.symbol.toLowerCase();
-
       const keySymbol = symbol === 's' ? 'ftm' : symbol;
       result[keySymbol] = {
         symbol: keySymbol,
@@ -183,7 +182,6 @@ function round8(num) {
 }
 
 async function queryTicker() {
-  console.log('queryTicker');
   try {
     const startAt = Date.now();
     const [supplyBN, prices] = await Promise.all([
