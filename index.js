@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana', 'tontoken'];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana', 'polygon-ecosystem-token', 'tontoken'];
 const app = express();
 let cachedTicker = null;
 
@@ -95,20 +95,25 @@ async function getCryptoCoinsInfo() {
       { headers: { 'X-CMC_PRO_API_KEY': API_KEY } }
     );
     const json = await res.json();
-    const result = Object.create(null);
-    for (let k in json.data) {
-      const currencyUpper = json.data[k].symbol;
-      result[currencyUpper.toLowerCase()] = {
-        quote: json.data[k].quote,
+
+    const result = {};
+    for (const id in json.data) {
+      const coin = json.data[id];
+      const symbol = coin.symbol.toLowerCase();
+      const keySymbol = symbol === 's' ? 'ftm' : symbol;
+      result[keySymbol] = {
+        symbol: keySymbol,
+        slug: coin.slug,
+        price: coin.quote.USD.price,
+        change24h: coin.quote.USD.percent_change_24h,
+        volume24h: coin.quote.USD.volume_24h,
+        marketCap: coin.quote.USD.market_cap,
       };
-    }
-    if (json?.status?.error_message) {
-      console.log('cmc response', json);
     }
     return result;
   } catch (e) {
     console.error(e);
-    return Object.create(null);
+    return {};
   }
 }
 
@@ -177,44 +182,41 @@ function round8(num) {
 }
 
 async function queryTicker() {
-  console.log('queryTicker');
   try {
     const startAt = Date.now();
     const [supplyBN, prices] = await Promise.all([
       getVlxSupplyBN(),
       getCryptoCoinsInfo(),
     ]);
-    if (!prices.vlx) return cachedTicker;
+    if (!cachedTicker) cachedTicker = {};
+
+    cachedTicker.ts = Date.now();
+    cachedTicker.total_supply = supplyBN.toFixed();
+    // console.log('prices', prices)
+
     const total_supply = fixTotalSupply(supplyBN.toNumber())
     const available_supply = total_supply;
-    const volume = round(prices.vlx.quote.USD.volume_24h);
-    const price_btc = round8(prices.vlx.quote.USD.price / prices.btc.quote.USD.price);
-    const volume_btc = round8(prices.vlx.quote.USD.volume_24h / prices.btc.quote.USD.price);
+    const btc_usd = round8(prices.btc.price);
+    const volume = round(prices.vlx.volume24h);
+    const price_usd = round6(prices.vlx.price);
 
-    const price_usd = round6(prices.vlx.quote.USD.price);
-    const btc_usd = round8(prices.btc.quote.USD.price);
+    cachedTicker.volume = volume ?? cachedTicker.volume ?? "0";
+    cachedTicker.available_supply = available_supply ?? cachedTicker.available_supply ?? "0";
+    cachedTicker.price_usd = price_usd;
 
-    if (!cachedTicker) {
-      cachedTicker = {};
+    const price_btc = round8(prices.vlx.price / prices.btc.price);
+    const volume_btc = round8(prices.vlx.volume24h / prices.btc.price);
+
+    cachedTicker.price_btc = price_btc ?? cachedTicker.price_btc ?? "0";
+    cachedTicker.btc_usd = btc_usd ?? cachedTicker.btc_usd ?? "0";
+    cachedTicker.volume_btc = volume_btc ?? cachedTicker.volume_btc ?? "0";
+
+    for (const symbol in prices) {
+      const coin = prices[symbol];
+      cachedTicker[`${symbol}_price`] = round8(coin.price);
+      cachedTicker[`${symbol}_24hdiff`] = round8(coin.change24h);
     }
-    cachedTicker.total_supply = total_supply || cachedTicker.total_supply || "0";
-    cachedTicker.price_usd = price_usd || cachedTicker.price_usd || "0";
-    cachedTicker.volume = volume || cachedTicker.volume || "0";
-    cachedTicker.price_btc = price_btc || cachedTicker.price_btc || "0";
-    cachedTicker.btc_usd = btc_usd || cachedTicker.btc_usd || "0";
-    cachedTicker.volume_btc = volume_btc || cachedTicker.volume_btc || "0";
-    cachedTicker.available_supply = available_supply || cachedTicker.available_supply || "0";
-    cachedTicker.ts = Date.now();
 
-    for (let currency in prices) {
-      const symbol = currency === 's' ? 'ftm' : currency;
-      try {
-        cachedTicker[`${symbol}_price`] = round8(prices[currency].quote.USD.price);
-        cachedTicker[`${symbol}_24hdiff`] = round8(prices[currency].quote.USD.percent_change_24h);
-      } catch (e) {
-        console.error(`Parsing ${symbol} error`, e);
-      }
-    }
     addLabPrices(cachedTicker);
     addSwzPrices(cachedTicker);
     addAnyPrices(cachedTicker);
