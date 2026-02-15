@@ -2,7 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const BigNumber = require("bignumber.js");
 const fs = require("fs");
-const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana', 'polygon-ecosystem-token'];
+const monitoringCurrencies = ['velas', 'bitcoin', 'litecoin', 'ethereum', 'gobyte', 'tether', 'binance-usd', 'usd-coin', 'huobi-token', 'bnb', 'solana', 'bitorbit', 'usdv', 'pulsepad', 'velhalla', 'weway', 'swapz', 'astroswap', 'qmall-token', 'verve', 'metavpad', 'velaspad', 'wagyuswap', 'velerodao', 'multi-collateral-dai', 'cardano', 'metafame', 'polygon', 'avalanche', 'sonic', 'solana', 'polygon-ecosystem-token', 'tontoken'];
 const app = express();
 let cachedTicker = null;
 
@@ -100,6 +100,9 @@ async function getCryptoCoinsInfo() {
     for (const id in json.data) {
       const coin = json.data[id];
       const symbol = coin.symbol.toLowerCase();
+      if (symbol === 'ton') {
+        console.log("ton symbol", coin);
+      }
       const keySymbol = symbol === 's' ? 'ftm' : symbol;
       result[keySymbol] = {
         symbol: keySymbol,
@@ -210,7 +213,7 @@ async function queryTicker() {
     cachedTicker.price_btc = price_btc ?? cachedTicker.price_btc ?? "0";
     cachedTicker.btc_usd = btc_usd ?? cachedTicker.btc_usd ?? "0";
     cachedTicker.volume_btc = volume_btc ?? cachedTicker.volume_btc ?? "0";
-
+    
     for (const symbol in prices) {
       const coin = prices[symbol];
       cachedTicker[`${symbol}_price`] = round8(coin.price);
